@@ -1,11 +1,10 @@
-import os
-import pickle
 import tkinter as tk
 from tkinter import messagebox
 import face_recognition
+from models.face_db import get_all_users
 
 
-# ---------------- UI COMPONENTS ----------------
+# ---------------- UI HELPERS ----------------
 
 def get_button(window, text, color, command, fg='white'):
     return tk.Button(
@@ -24,13 +23,13 @@ def get_button(window, text, color, command, fg='white'):
 
 def get_img_label(window):
     label = tk.Label(window)
-    label.place(x=0, y=0)   # FIXED: consistent with .place() in main.py
+    label.place(x=0, y=0)
     return label
 
 
 def get_text_label(window, text):
     label = tk.Label(window, text=text)
-    label.config(font=("Arial", 18), justify="left")
+    label.config(font=("Arial", 18))
     return label
 
 
@@ -49,46 +48,24 @@ def msg_box(title, description):
 
 # ---------------- FACE RECOGNITION ----------------
 
-def recognize(img, db_path):
-    """
-    Compare webcam face with stored embeddings in db_path.
-    Returns: username / unknown_person / no_persons_found
-    """
+def recognize(img):
+    unknown_faces = face_recognition.face_encodings(img)
 
-    # Step 1: extract face encoding from input image
-    embeddings_unknown = face_recognition.face_encodings(img)
+    if len(unknown_faces) == 0:
+        return "no_persons_found"
 
-    if len(embeddings_unknown) == 0:
-        return 'no_persons_found'
+    unknown = unknown_faces[0]
 
-    embeddings_unknown = embeddings_unknown[0]
+    users = get_all_users()
 
-    # Step 2: load DB files
-    if not os.path.exists(db_path):
-        return 'unknown_person'
+    best_match = None
+    best_distance = 0.5  # stricter threshold for real system
 
-    db_files = [f for f in os.listdir(db_path) if f.endswith('.pickle')]
-    db_files.sort()
+    for name, embedding in users:
+        distance = face_recognition.face_distance([embedding], unknown)[0]
 
-    # Step 3: compare with stored embeddings
-    for file in db_files:
-        file_path = os.path.join(db_path, file)
+        if distance < best_distance:
+            best_distance = distance
+            best_match = name
 
-        try:
-            with open(file_path, 'rb') as f:
-                stored_embedding = pickle.load(f)
-        except Exception as e:
-            print(f"Error loading {file}: {e}")
-            continue
-
-        # Better accuracy than compare_faces
-        distance = face_recognition.face_distance(
-            [stored_embedding],
-            embeddings_unknown
-        )[0]
-
-        # threshold (lower = stricter)
-        if distance < 0.5:
-            return os.path.splitext(file)[0]
-
-    return 'unknown_person'
+    return best_match if best_match else "unknown_person"
