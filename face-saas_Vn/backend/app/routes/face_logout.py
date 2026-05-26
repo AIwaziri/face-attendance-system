@@ -1,23 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
+import numpy as np
+import cv2
+
 from ..db import get_db
 from ..models import Attendance
 from ..face_service import recognize_face
 
 router = APIRouter()
 
-
 @router.post("/logout")
-async def face_logout(file: bytes):
-    """
-    Same idea as login, but marks OUT
-    (we will switch to webcam later)
-    """
+async def logout(file: UploadFile = File(...)):
+    contents = await file.read()
 
-    # NOTE: simplified version (we will upgrade later with UploadFile)
-    import numpy as np
-    import cv2
-
-    npimg = np.frombuffer(file, np.uint8)
+    npimg = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
     name = recognize_face(img)
@@ -27,12 +22,11 @@ async def face_logout(file: bytes):
 
     db = next(get_db())
 
-    record = Attendance(
+    db.add(Attendance(
         name=name,
         status="OUT"
-    )
+    ))
 
-    db.add(record)
     db.commit()
 
     return {"success": True, "name": name, "status": "OUT"}

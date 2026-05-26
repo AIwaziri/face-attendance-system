@@ -5,7 +5,7 @@ from .routes import face_login
 from .db import Base, engine
 from .routes import users, attendance, auth_routes
 from .websocket import router as ws_router
-from .routes import face_logout, users_list
+from .routes import face_logout, users_list, face_attendance
 
 
 
@@ -14,13 +14,26 @@ app = FastAPI(title="Face SaaS Platform")
 app.include_router(face_login.router, prefix="/face")
 app.include_router(face_logout.router, prefix="/face")
 app.include_router(users_list.router, prefix="/users")
+app.include_router(face_attendance.router, prefix="/face")
 # CORS FIX (CRITICAL)
 app.add_middleware(
+
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+
+    allow_origins=[
+
+        "http://localhost:5173",
+
+        "http://127.0.0.1:5173"
+
+    ],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
+
 )
 
 Base.metadata.create_all(bind=engine)

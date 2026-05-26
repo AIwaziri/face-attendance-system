@@ -4,7 +4,6 @@ import pickle
 from .db import SessionLocal
 from .models import User
 
-
 def encode_face(image):
     enc = face_recognition.face_encodings(image)
     return enc[0] if len(enc) > 0 else None
