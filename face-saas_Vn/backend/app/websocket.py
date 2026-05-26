@@ -1,21 +1,19 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import WebSocket
+from typing import List
 
-router = APIRouter()
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
 
-clients = []
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
 
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
 
-@router.websocket("/ws")
-async def ws_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    clients.append(websocket)
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
 
-    try:
-        while True:
-            data = await websocket.receive_text()
-
-            for c in clients:
-                await c.send_text(data)
-
-    except:
-        clients.remove(websocket)
+manager = ConnectionManager()

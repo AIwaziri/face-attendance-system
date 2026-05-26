@@ -4,10 +4,10 @@ from .routes import face_login
 
 from .db import Base, engine
 from .routes import users, attendance, auth_routes
-from .websocket import router as ws_router
 from .routes import face_logout, users_list, face_attendance
 
-
+from fastapi import WebSocket
+from .websocket import manager
 
 
 app = FastAPI(title="Face SaaS Platform")
@@ -41,9 +41,17 @@ Base.metadata.create_all(bind=engine)
 app.include_router(users.router, prefix="/users")
 app.include_router(attendance.router, prefix="/attendance")
 app.include_router(auth_routes.router, prefix="/auth")
-app.include_router(ws_router)
 
+@app.websocket("/ws/attendance")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except:
+        manager.disconnect(websocket)
 
 @app.get("/")
 def home():
-    return {"message": "Face SaaS API running"}
+    return {"message": "AiWaziri FaceID SaaS API running"}
