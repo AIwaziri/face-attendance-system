@@ -4,9 +4,10 @@ import cv2
 
 from ..db import get_db
 from ..models import Attendance
-from ..face_service import recognize_face
+from ..services.face_recognition_service import recognize_face
 
 router = APIRouter()
+
 
 @router.post("/logout")
 async def logout(file: UploadFile = File(...)):
@@ -22,11 +23,7 @@ async def logout(file: UploadFile = File(...)):
 
     db = next(get_db())
 
-    db.add(Attendance(
-        name=name,
-        status="OUT"
-    ))
-
+    db.add(Attendance(name=name, status="OUT"))
     db.commit()
 
     return {"success": True, "name": name, "status": "OUT"}

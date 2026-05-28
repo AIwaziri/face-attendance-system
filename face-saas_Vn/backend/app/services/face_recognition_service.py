@@ -1,8 +1,10 @@
 import face_recognition
 import numpy as np
 import pickle
-from .db import SessionLocal
-from .models import User
+
+from app.db import SessionLocal
+from app.models import User
+
 
 def encode_face(image):
     enc = face_recognition.face_encodings(image)
@@ -22,6 +24,9 @@ def recognize_face(image):
     best_distance = 0.5
 
     for user in users:
+        if user.embedding is None:
+            continue
+
         stored = pickle.loads(user.embedding)
 
         dist = face_recognition.face_distance([stored], unknown)[0]
