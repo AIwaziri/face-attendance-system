@@ -1,41 +1,101 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../api";
 
 export default function Login() {
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const login = async () => {
     try {
-      const res = await API.post("/auth/login", {
-        name,
-        password
-      });
+      setLoading(true);
 
-      localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("role", res.data.role);
+      const res = await API.post(
+        `/auth/login?name=${encodeURIComponent(
+          name
+        )}&password=${encodeURIComponent(password)}`
+      );
+
+      localStorage.setItem(
+        "token",
+        res.data.access_token
+      );
+
+      localStorage.setItem(
+        "role",
+        res.data.role
+      );
 
       alert("Login successful!");
+
+      if (res.data.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/employee");
+      }
+
     } catch (err) {
-      alert("Login failed");
+      console.error(err);
+
+      alert(
+        err?.response?.data?.detail ||
+        "Login failed"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div
+      style={{
+        maxWidth: "400px",
+        margin: "50px auto",
+        padding: "20px",
+        border: "1px solid #ddd",
+        borderRadius: "10px"
+      }}
+    >
       <h2>🔐 Login</h2>
 
-      <input placeholder="Name" onChange={(e) => setName(e.target.value)} />
-      <br />
+      <input
+        type="text"
+        placeholder="Username"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginBottom: "10px"
+        }}
+      />
 
       <input
-        placeholder="Password"
         type="password"
+        placeholder="Password"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginBottom: "10px"
+        }}
       />
-      <br />
 
-      <button onClick={login}>Login</button>
+      <button
+        onClick={login}
+        disabled={loading}
+        style={{
+          width: "100%",
+          padding: "10px",
+          cursor: "pointer"
+        }}
+      >
+        {loading ? "Logging in..." : "Login"}
+      </button>
     </div>
   );
 }
